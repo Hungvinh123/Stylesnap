@@ -1,0 +1,67 @@
+/* ==== Kích thước vùng nội dung dưới taskbar (72px) ==== */
+.page-wrap {
+  position: relative;
+  height: calc(100vh - 72px);
+}
+
+/* ==== Canvas 3D lấp đầy khung, canh giữa như mock ==== */
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 1200px;   /* vừa mắt giống mock */
+  margin: 0 auto;
+  z-index: 1;
+  pointer-events: auto; /* QUAN TRỌNG: canvas nhận chuột để xoay */
+}
+
+/* ==== Lớp UI nổi trên canvas (mặc định không chặn chuột) ==== */
+.ui-layer {
+  position: relative;
+  z-index: 10;
+  pointer-events: none; /* cho chuột xuyên xuống canvas */
+}
+
+/* Chỉ các cụm cần tương tác mới bật lại pointer events */
+.editortabs-container,
+.filtertabs-container,
+.go-back,
+.home.ui-layer {
+  pointer-events: auto;
+}
+
+/* ==== Panel trái: hẹp, cố định cạnh trái, không phủ toàn màn ==== */
+.panel-left {
+  position: fixed;
+  top: 72px;                     /* dưới taskbar */
+  left: 0;
+  height: calc(100vh - 72px);
+  display: flex;
+  align-items: center;           /* căn giữa theo chiều dọc */
+  padding-left: 12px;
+  z-index: 12;                   /* nổi trên canvas */
+  pointer-events: auto;          /* ✅ luôn cho phép click trong panel */
+}
+
+/* ==== Go Back: góc phải trên ==== */
+.go-back {
+  position: fixed;
+  top: calc(72px + 8px);
+  right: 16px;
+  z-index: 20;
+}
+
+/* ==== Nhóm icon vàng: giữa đáy màn hình ==== */
+.filtertabs-container {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+}
+
+/* ==== Dọn dẹp: bỏ các lớp cũ không còn dùng ====
+   .floating-left, .floating-bottom, .floating-right-top
+*/
