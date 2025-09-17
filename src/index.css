@@ -1,5 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,200;0,600;1,900&display=swap");
 @import url("https://rsms.me/inter/inter.css");
+@import "./styles/layout.css";
+@import "./styles/toast.css";
+
 
 @tailwind base;
 @tailwind components;
@@ -82,3 +85,76 @@ input[type="file"] {
 .sketch-picker > div:nth-child(3) {
   display: none !important;
 }
+
+/* vùng chứa Canvas 3D trên mọi trang */
+.page-root { position: relative; min-height: calc(100vh - 64px); } /* chừa header ~64px */
+.canvas-wrap {
+  position: absolute;
+  inset: 64px 0 0 0;   /* dưới header */
+  z-index: 0;
+}
+
+/* UI luôn nổi trên Canvas */
+.home, .editortabs-container, .filtertabs-container { position: relative; z-index: 10; }
+
+/* tinh chỉnh theo ảnh demo */
+.filtertabs-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Vùng trang + Canvas */
+.page-wrap { position: relative; min-height: calc(100vh - 64px); }
+.canvas-wrap { position: absolute; inset: 64px 0 0 0; z-index: 1; } /* dưới header */
+
+/* UI lớp trên Canvas để click được */
+.ui-layer { position: relative; z-index: 10; pointer-events: auto; }
+
+/* Cụm filter/tabs dưới model (giữa màn hình) */
+.filtertabs-container {
+  position: fixed;
+  left: 50%; bottom: 20px;
+  transform: translateX(-50%);
+  display: flex; gap: 10px;
+  z-index: 12;
+}
+
+/* Chiều cao header dùng chung (nếu khác 64px, đổi tại đây) */
+:root { --header-h: 64px; }
+
+/* Canvas chiếm toàn bộ vùng dưới header */
+.page-wrap { position: relative; min-height: calc(100vh - var(--header-h)); }
+.canvas-wrap { position: absolute; inset: var(--header-h) 0 0 0; z-index: 1; }
+
+/* UI phải nổi trên canvas để click được */
+.ui-layer { position: relative; z-index: 10; pointer-events: auto; }
+
+/* GO BACK: luôn ở góc phải trên, dưới header một chút */
+.go-back {
+  position: fixed;
+  top: calc(var(--header-h) + 8px);
+  right: 16px;
+  z-index: 20;
+}
+
+/* NHÓM ICON VÀNG (logo/text/download): giữa đáy màn hình */
+.filtertabs-container {
+  position: fixed;
+  left: 0.1%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+/* Responsive nhẹ */
+@media (max-width: 640px) {
+  .go-back { right: 8px; top: calc(var(--header-h) + 6px); }
+  .filtertabs-container { bottom: 12px; gap: 8px; }
+}
+
+
