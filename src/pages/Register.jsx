@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { useNotify } from '../store/notify'; // ⬅️ thêm
-
+import GoogleLoginButton from '../components/GoogleLoginButton';
 const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const passOk  = (s) => /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(s);
 
@@ -47,6 +47,7 @@ export default function Register() {
             value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} />
         </label>
         <button className="w-full rounded-xl bg-black text-white py-2">Register</button>
+        <GoogleLoginButton onDone={() => navigate('/customize')} />
         <div className="mt-4 text-center text-sm text-gray-600">
           Đã có tài khoản? <Link className="text-black underline" to="/login">Login</Link>
         </div>

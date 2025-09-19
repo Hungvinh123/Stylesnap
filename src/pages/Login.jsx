@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { useNotify } from '../store/notify'; // ⬅️ thêm
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
@@ -42,6 +43,7 @@ export default function Login() {
             value={pwd} onChange={(e)=>setPwd(e.target.value)} required />
         </label>
         <button className="w-full rounded-xl bg-black text-white py-2">Login</button>
+        <GoogleLoginButton onDone={() => navigate('/customize')} />
         <div className="mt-4 text-center text-sm text-gray-600">
           Chưa có tài khoản? <Link className="text-black underline" to="/register">Register</Link>
         </div>
