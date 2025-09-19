@@ -16,7 +16,7 @@ const Home = () => {
   const { user } = useAuth();
 
   const handleCustomize = () => {
-    nav(user ? '/customize' : '/login');
+    nav(user ? '/customize' : '/login?next=/customize');
   };
 
   return (
