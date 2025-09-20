@@ -1,15 +1,19 @@
+// src/pages/Login.jsx
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../store/auth';
-import { useNotify } from '../store/notify'; // ⬅️ thêm
+import { useNotify } from '../store/notify';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 export default function Login() {
   const nav = useNavigate();
+  const location = useLocation();
+  const next = location.state?.from ?? '/customize';
+
   const { login } = useAuth();
-  const notify = useNotify();              // ⬅️ thêm
+  const notify = useNotify();
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
   const [err, setErr] = useState('');
@@ -20,10 +24,10 @@ export default function Login() {
     if (!pwd) return setErr('Vui lòng nhập mật khẩu');
     try {
       await login(email, pwd);
-      notify.show('Đăng nhập thành công', 'success'); // ⬅️ thêm
-      nav('/customize');
+      notify.show('Đăng nhập thành công', 'success');
+      nav(next);
     } catch (e) {
-      setErr(e.message);
+      setErr(e.message || 'Đăng nhập thất bại');
     }
   };
 
@@ -34,16 +38,32 @@ export default function Login() {
         {err && <div className="mb-3 text-sm text-red-600">{err}</div>}
         <label className="block mb-3">
           <span className="text-sm text-gray-600">Email</span>
-          <input className="mt-1 w/full border rounded-xl px-3 py-2" type="email"
-            value={email} onChange={(e)=>setEmail(e.target.value)} required />
+          <input
+            className="mt-1 w-full border rounded-xl px-3 py-2"
+            type="email"
+            value={email}
+            onChange={(e)=>setEmail(e.target.value)}
+            required
+          />
         </label>
         <label className="block mb-4">
           <span className="text-sm text-gray-600">Password</span>
-          <input className="mt-1 w/full border rounded-xl px-3 py-2" type="password"
-            value={pwd} onChange={(e)=>setPwd(e.target.value)} required />
+          <input
+            className="mt-1 w-full border rounded-xl px-3 py-2"
+            type="password"
+            value={pwd}
+            onChange={(e)=>setPwd(e.target.value)}
+            required
+          />
         </label>
-        <button className="w-full rounded-xl bg-black text-white py-2">Login</button>
-        <GoogleLoginButton onDone={() => navigate('/customize')} />
+
+        <button type="submit" className="w-full rounded-xl bg-black text-white py-2">Login</button>
+
+        <div className="mt-3">
+          {/* Server sẽ đặt cookie + redirect lại next */}
+          <GoogleLoginButton next={next} onDone={() => nav(next)} />
+        </div>
+
         <div className="mt-4 text-center text-sm text-gray-600">
           Chưa có tài khoản? <Link className="text-black underline" to="/register">Register</Link>
         </div>

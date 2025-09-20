@@ -1,59 +1,65 @@
 // src/store/auth.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-const AuthCtx = createContext(null);
-export const useAuth = () => useContext(AuthCtx);
+const AuthContext = createContext(null);
 
-// Safe JSON parser: chịu được body rỗng/HTML
-async function parseJSONSafe(res) {
-  const text = await res.text();
-  if (!text) return {};
-  try { return JSON.parse(text); }
-  catch { return { __raw: text }; }
-}
+// Nếu API cùng origin (khuyên dùng), để trống để gọi '/api/...'
+const API = import.meta.env.VITE_API_ORIGIN || '';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [booting, setBooting] = useState(true);
 
-  const fetchMe = async () => {
-    const res = await fetch('/api/auth/me', { credentials: 'include' });
-    const data = await parseJSONSafe(res);
-    setUser(data.user || null);
-  };
-  useEffect(() => { fetchMe(); }, []);
+  // Rehydrate phiên từ cookie khi load app / reload trang
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API}/api/auth/me`, { credentials: 'include' });
+        const data = await r.json();
+        if (!canceled) setUser(data.user ?? null);
+      } catch {
+        if (!canceled) setUser(null);
+      } finally {
+        if (!canceled) setBooting(false);
+      }
+    })();
+    return () => { canceled = true; };
+  }, []);
 
   const login = async (email, password) => {
-    const res = await fetch('/api/auth/login', {
+    const r = await fetch(`${API}/api/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await parseJSONSafe(res);
-    if (!res.ok) throw new Error(data.error || data.__raw || 'Login failed');
+    if (!r.ok) throw new Error('Login failed');
+    const data = await r.json();
     setUser(data.user);
+    return data.user;
   };
 
   const register = async (payload) => {
-    const res = await fetch('/api/auth/register', {
+    const r = await fetch(`${API}/api/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const data = await parseJSONSafe(res);
-    if (!res.ok) throw new Error(data.error || data.__raw || 'Register failed');
+    if (!r.ok) throw new Error('Register failed');
+    const data = await r.json();
     setUser(data.user);
+    return data.user;
   };
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await fetch(`${API}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     setUser(null);
   };
 
-  return (
-    <AuthCtx.Provider value={{ user, login, register, logout }}>
-      {children}
-    </AuthCtx.Provider>
-  );
+  const value = useMemo(() => ({ user, booting, login, register, logout }), [user, booting]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+export const useAuth = () => useContext(AuthContext);

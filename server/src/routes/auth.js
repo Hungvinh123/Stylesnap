@@ -2,34 +2,29 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { getPool, sql } from '../db.js';
-
-function assertGoogleEnv() {
-  const miss = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_CALLBACK_URL'];
-  const lack = miss.filter(k => !process.env[k]);
-  if (lack.length) throw new Error('Missing Google OAuth ENV: ' + lack.join(', '));
-}
-assertGoogleEnv();
-
+import { createSessionCookie, clearSessionCookie, verifySessionCookie } from '../session.js';
 
 const router = Router();
 
-// ===== Validators / helpers (giữ y nguyên như bạn đang có) =====
+// Helpers
 const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const passOk  = (s) => /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(s);
 const pickUser = (u) => ({ id: u.id, email: u.email, full_name: u.full_name });
 const safeNext = (n) => (typeof n === 'string' && n.startsWith('/') && !n.startsWith('//')) ? n : '/home';
 
-// ===== Register (giữ nguyên) =====
-router.post('/register', /* ... y nguyên code hiện có ... */ async (req, res) => {
+// ===== Register =====
+router.post('/register', async (req, res) => {
   try {
     const { email, password, full_name } = req.body || {};
     if (!emailOk(email)) return res.status(400).json({ error: 'Email không hợp lệ' });
     if (!passOk(password)) return res.status(400).json({ error: 'Mật khẩu tối thiểu 8 ký tự, có chữ & số' });
+
     const pool = await getPool();
     const exists = await pool.request().input('email', sql.NVarChar(255), email)
       .query('SELECT TOP 1 id FROM dbo.Users WHERE email=@email');
     if (exists.recordset.length) return res.status(409).json({ error: 'Email đã tồn tại' });
-    const hash = await bcrypt.hash(password, 10);
+
+    const hash = await bcrypt.hash(password, 12);
     const inserted = await pool.request()
       .input('email', sql.NVarChar(255), email)
       .input('password_hash', sql.NVarChar(255), hash)
@@ -40,8 +35,9 @@ router.post('/register', /* ... y nguyên code hiện có ... */ async (req, res
         VALUES(@email, @password_hash, @full_name)
       `);
     const user = inserted.recordset[0];
-    req.session.user = pickUser(user);
-    return res.json({ user: req.session.user });
+
+    createSessionCookie(res, user.id);
+    return res.json({ user: pickUser(user) });
   } catch (e) {
     if (e?.number === 2627 || e?.number === 2601) return res.status(409).json({ error: 'Email đã tồn tại' });
     console.error('register error:', e);
@@ -49,43 +45,61 @@ router.post('/register', /* ... y nguyên code hiện có ... */ async (req, res
   }
 });
 
-// ===== Login (giữ nguyên) =====
-router.post('/login', /* ... y nguyên code hiện có ... */ async (req, res) => {
+// ===== Login =====
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!emailOk(email) || !password) return res.status(400).json({ error: 'Thông tin không hợp lệ' });
+
     const pool = await getPool();
     const rs = await pool.request()
       .input('email', sql.NVarChar(255), email)
       .query('SELECT TOP 1 id, email, password_hash, full_name FROM dbo.Users WHERE email=@email');
     if (!rs.recordset.length) return res.status(401).json({ error: 'Sai email hoặc mật khẩu' });
+
     const row = rs.recordset[0];
     const ok = await bcrypt.compare(password, row.password_hash);
     if (!ok) return res.status(401).json({ error: 'Sai email hoặc mật khẩu' });
+
     pool.request().input('id', sql.Int, row.id)
       .query('UPDATE dbo.Users SET last_login = SYSUTCDATETIME() WHERE id = @id')
       .catch(() => {});
-    req.session.user = pickUser(row);
-    return res.json({ user: req.session.user });
+
+    createSessionCookie(res, row.id);
+    return res.json({ user: pickUser(row) });
   } catch (e) {
     console.error('login error:', e);
     return res.status(500).json({ error: 'Lỗi server' });
   }
 });
 
-// ===== Me / Logout (giữ nguyên) =====
-router.get('/me', (req, res) => res.json({ user: req.session.user || null }));
-router.post('/logout', (req, res) => {
-  try { req.session.destroy(() => res.json({ ok: true })); }
-  catch { return res.json({ ok: true }); }
+// ===== Me / Logout =====
+router.get('/me', async (req, res) => {
+  const s = verifySessionCookie(req);
+  if (!s) return res.json({ user: null });
+  try {
+    const pool = await getPool();
+    const r = await pool.request().input('id', sql.Int, s.uid)
+      .query('SELECT TOP 1 id, email, full_name FROM dbo.Users WHERE id=@id');
+    const user = r.recordset[0];
+    if (!user) return res.json({ user: null });
+    res.json({ user: pickUser(user) });
+  } catch {
+    res.json({ user: null });
+  }
+});
+
+router.post('/logout', (_req, res) => {
+  clearSessionCookie(res);
+  res.json({ ok: true });
 });
 
 /* ================== GOOGLE (REDIRECT-BASED) ================== */
 
-// B1: start – nhận ?next, lưu vào session, rồi chuyển hướng tới Google
+// B1: start – nhận ?next, lưu tạm bằng cookie 10 phút, rồi redirect tới Google
 router.get('/google/start', (req, res) => {
   const next = safeNext(req.query.next);
-  req.session.postLoginRedirect = next;   // nhớ ý định điều hướng
+  res.cookie('post_login_next', next, { httpOnly: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/' });
 
   const p = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
@@ -99,7 +113,7 @@ router.get('/google/start', (req, res) => {
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${p.toString()}`);
 });
 
-// B2: callback – đổi code -> token, tạo/ghép user, rồi redirect về next (mặc định /home)
+// B2: callback – đổi code -> token, upsert user, đặt cookie phiên, rồi redirect về next
 router.get('/google/callback', async (req, res) => {
   try {
     const { code, error, error_description } = req.query || {};
@@ -122,12 +136,7 @@ router.get('/google/callback', async (req, res) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params
     });
-
-    if (!tokenResp.ok) {
-      const msg = await tokenResp.text().catch(() => '');
-      console.error('Token exchange failed:', tokenResp.status, msg);
-      return res.redirect('/login?oauth=token_exchange_failed');
-    }
+    if (!tokenResp.ok) return res.redirect('/login?oauth=token_exchange_failed');
 
     const tokenJson = await tokenResp.json();
     const accessToken = tokenJson.access_token;
@@ -136,14 +145,10 @@ router.get('/google/callback', async (req, res) => {
     const ui = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
-    if (!ui.ok) {
-      const msg = await ui.text().catch(() => '');
-      console.error('Userinfo failed:', ui.status, msg);
-      return res.redirect('/login?oauth=userinfo_failed');
-    }
+    if (!ui.ok) return res.redirect('/login?oauth=userinfo_failed');
     const info = await ui.json(); // { sub, email, name, ... }
 
-    // Upsert & tạo session (y hệt trước đây)
+    // Upsert & link provider
     const pool = await getPool();
     const provider = 'google';
     const pid = info.sub;
@@ -166,8 +171,7 @@ router.get('/google/callback', async (req, res) => {
     } else {
       let userId = null;
       if (email) {
-        const findUser = await pool.request()
-          .input('email', sql.NVarChar(255), email)
+        const findUser = await pool.request().input('email', sql.NVarChar(255), email)
           .query('SELECT id FROM dbo.Users WHERE email=@email');
         if (findUser.recordset.length) userId = findUser.recordset[0].id;
       }
@@ -185,12 +189,10 @@ router.get('/google/callback', async (req, res) => {
         userId = userRow.id;
       }
       if (!userRow) {
-        const getUser = await pool.request()
-          .input('id', sql.Int, userId)
+        const getUser = await pool.request().input('id', sql.Int, userId)
           .query('SELECT id, email, full_name FROM dbo.Users WHERE id=@id');
         userRow = getUser.recordset[0];
       }
-
       await pool.request()
         .input('user_id', sql.Int, userRow.id)
         .input('provider', sql.NVarChar(50), provider)
@@ -204,13 +206,14 @@ router.get('/google/callback', async (req, res) => {
         `);
     }
 
-    req.session.user = pickUser(userRow);
+    // đặt cookie phiên
+    createSessionCookie(res, userRow.id);
 
-    // ✅ Lấy next từ session (nếu không có thì về /home)
-    const next = safeNext(req.session.postLoginRedirect);
-    delete req.session.postLoginRedirect;
+    // lấy next từ cookie tạm (hoặc /home)
+    const next = req.cookies?.post_login_next || '/home';
+    res.clearCookie('post_login_next', { path: '/' });
 
-    return res.redirect(next);
+    return res.redirect(safeNext(next));
   } catch (e) {
     console.error('google/callback error:', e);
     return res.redirect('/login?oauth=server_error');
