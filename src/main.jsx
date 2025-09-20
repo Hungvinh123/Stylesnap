@@ -1,10 +1,11 @@
+// src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom';
 import './index.css';
 
-import { NotifyProvider } from './store/notify';     // ⬅️ dùng
-import ToastContainer from './components/ToastContainer'; // ⬅️ dùng
+import { NotifyProvider } from './store/notify';
+import ToastContainer from './components/ToastContainer';
 
 import Home from './pages/Home';
 import CustomizePage from './pages/Customizer';
@@ -13,9 +14,21 @@ import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
 
+// Route guard: đợi booting (rehydrate /me) xong mới quyết định
 function Protected({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, booting } = useAuth();
+  const location = useLocation();
+
+  if (booting) {
+    return (
+      <div className="w-full h-screen grid place-items-center text-gray-500">
+        Loading…
+      </div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
   return children;
 }
 
@@ -45,9 +58,9 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <NotifyProvider>               {/* ⬅️ bọc Notify */}
+  <NotifyProvider>
     <AuthProvider>
-      <ToastContainer />         {/* ⬅️ mount container 1 lần ở root */}
+      <ToastContainer />
       <RouterProvider router={router} />
     </AuthProvider>
   </NotifyProvider>
