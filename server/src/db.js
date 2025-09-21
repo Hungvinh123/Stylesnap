@@ -41,7 +41,7 @@ function assertConfig() {
       'DB_PORT=1433',
       'DB_NAME=stylesnap',
       'DB_USER=sa',
-      'DB_PASS=123',
+      'DB_PASS=12345678',
       '# DB_INSTANCE=SQLEXPRESS  (optional)',
       'SESSION_SECRET=change_this_secret',
     ].join('\n');

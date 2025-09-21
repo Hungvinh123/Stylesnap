@@ -7,6 +7,9 @@ import cors from 'cors';
 import { fileURLToPath } from 'node:url';
 import { getPool } from './db.js';
 import authRoutes from './routes/auth.js';
+import downloadRoutes from './routes/download.js';
+import designRoutes from './routes/designs.js';
+import paymentRoutes from './routes/payment.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -26,6 +29,10 @@ app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
 // API
 app.use('/api/auth', authRoutes);
+app.use('/api/download', downloadRoutes);
+app.use('/api/designs', designRoutes);
+app.use('/api/payment', paymentRoutes);
+// Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 // --------- SPA (Dev: Vite middleware / Prod: static dist) ----------
