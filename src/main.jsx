@@ -13,7 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
-
+import PaymentReturn from './pages/PaymentReturn';
 // Route guard: đợi booting (rehydrate /me) xong mới quyết định
 function Protected({ children }) {
   const { user, booting } = useAuth();
@@ -51,7 +51,9 @@ const router = createBrowserRouter([
         </Protected>
       </AppLayout>
     ),
+    
   },
+  { path: '/payment-return', element: <AppLayout><PaymentReturn/></AppLayout> },
   { path: '/login',    element: <AppLayout><Login /></AppLayout> },
   { path: '/register', element: <AppLayout><Register /></AppLayout> },
   { path: '*',         element: <Navigate to="/home" replace /> }
