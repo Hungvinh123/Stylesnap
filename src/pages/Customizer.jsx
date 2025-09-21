@@ -31,13 +31,12 @@ const Customizer = () => {
 
   const generateTabContent = () => {
     switch (activeEditorTab) {
-      case 'colorpicker': return <ColorPicker />;
-      case 'filepicker': return <FilePicker file={file} setFile={setFile} readFile={readFile} />;
-      case 'logocontrols': return <LogoControls />;
-      case 'textcontrols': return <TextControls />;
-      case 'texturelogopicker':
-        return <TextureLogoPicker texturesLogos={texturesLogos} handleTextureLogoClick={handleTextureLogoClick} />;
-      default: return null;
+      case 'colorpicker':      return <ColorPicker />;
+      case 'filepicker':       return <FilePicker file={file} setFile={setFile} readFile={readFile} />;
+      case 'logocontrols':     return <LogoControls />;
+      case 'textcontrols':     return <TextControls />;
+      case 'texturelogopicker':return <TextureLogoPicker texturesLogos={texturesLogos} handleTextureLogoClick={handleTextureLogoClick} />;
+      default:                 return null;
     }
   };
 
@@ -97,19 +96,24 @@ const Customizer = () => {
       {/* Model 3D */}
       <Stage />
 
-      <AnimatePresence>
-        {/* 🔧 Panel trái: panel hẹp, không phủ toàn màn & KHÔNG gắn ui-layer */}
-        <motion.div className="panel-left" {...slideAnimation('left')}>
+      <AnimatePresence mode="wait">
+        {/* Panel trái */}
+        <motion.div key="panel-left" className="panel-left" {...slideAnimation('left')}>
           <div className="editortabs-container tabs">
-            {EditorTabs.map((tab) => (
-              <Tab key={tab.name} tab={tab} handleClick={() => setActiveEditorTab(tab.name)} />
+            {EditorTabs.map((tab, i) => (
+              <Tab
+                key={`editor-${tab?.name || tab?.key || i}`}
+                tab={tab}
+                handleClick={() => setActiveEditorTab(tab.name)}
+              />
             ))}
+            {/* nội dung theo tab */}
             {generateTabContent()}
           </div>
         </motion.div>
 
-        {/* Go Back – góc phải trên (giữ ui-layer để style chung, nhưng vẫn click được) */}
-        <motion.div className="go-back ui-layer" {...fadeAnimation}>
+        {/* Go Back */}
+        <motion.div key="go-back" className="go-back ui-layer" {...fadeAnimation}>
           <CustomButton
             type="filled"
             title="Go Back"
@@ -118,11 +122,11 @@ const Customizer = () => {
           />
         </motion.div>
 
-        {/* Nhóm icon vàng – giữa đáy màn hình */}
-        <motion.div className="filtertabs-container ui-layer" {...slideAnimation('up')}>
-          {FilterTabs.map((tab) => (
+        {/* Filter tabs */}
+        <motion.div key="filters" className="filtertabs-container ui-layer" {...slideAnimation('up')}>
+          {FilterTabs.map((tab, i) => (
             <Tab
-              key={tab.name}
+              key={`filter-${tab?.name || tab?.key || i}`}
               tab={tab}
               isFilterTab
               isActiveTab={!!activeFilterTab[tab.name]}

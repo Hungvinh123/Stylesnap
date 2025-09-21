@@ -25,8 +25,8 @@ const Home = () => {
       <Stage />
 
       {/* Hero copy + CTA */}
-      <AnimatePresence>
-        <motion.section className="home ui-layer" {...slideAnimation('left')}>
+      <AnimatePresence mode="wait">
+        <motion.section key="home-hero" className="home ui-layer" {...slideAnimation('left')}>
           <motion.header {...slideAnimation('down')}>
             <img src="/threejs.png" alt="logo" className="w-8 h-8 object-contain" />
           </motion.header>

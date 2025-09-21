@@ -14,7 +14,9 @@ import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
 
-// Route guard: đợi booting (rehydrate /me) xong mới quyết định
+import { initGA, pageview } from './lib/ga';   // <-- THÊM
+
+// Route guard: đợi booting xong mới quyết định
 function Protected({ children }) {
   const { user, booting } = useAuth();
   const location = useLocation();
@@ -32,9 +34,19 @@ function Protected({ children }) {
   return children;
 }
 
+// Theo dõi chuyển trang để bắn GA page_view
+function AnalyticsRouter() {
+  const location = useLocation();
+  React.useEffect(() => {
+    pageview(location.pathname + location.search);
+  }, [location]);
+  return null;
+}
+
 const AppLayout = ({ children }) => (
   <div className="min-h-screen bg-white">
     <Header />
+    <AnalyticsRouter />   {/* <-- THÊM */}
     {children}
   </div>
 );
@@ -57,11 +69,17 @@ const router = createBrowserRouter([
   { path: '*',         element: <Navigate to="/home" replace /> }
 ]);
 
+// Component boot để init GA một lần
+function Boot() {
+  React.useEffect(() => { initGA(); }, []);
+  return <RouterProvider router={router} />;
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <NotifyProvider>
     <AuthProvider>
       <ToastContainer />
-      <RouterProvider router={router} />
+      <Boot />
     </AuthProvider>
   </NotifyProvider>
 );
