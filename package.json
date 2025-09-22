@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-     "dev": "node server/src/index.js",
+    "dev": "node server/src/index.js",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -21,6 +21,7 @@
     "framer-motion": "^10.9.4",
     "maath": "^0.5.3",
     "mssql": "^11.0.1",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-color": "^2.19.3",
     "react-dom": "^18.2.0",

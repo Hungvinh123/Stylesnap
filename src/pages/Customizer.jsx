@@ -56,7 +56,7 @@ const Customizer = () => {
 
   const mapTypeToFilterTab = (type) => {
     if (type === 'frontLogo') return 'frontLogoShirt';
-    if (type === 'backLogo')  return 'backLogoShirt';
+    if (type === 'backLogo') return 'backLogoShirt';
     return 'stylishShirt'; // 'full'
   };
 
@@ -74,11 +74,11 @@ const Customizer = () => {
   const handleActiveFilterTab = (tabName) => {
     switch (tabName) {
       case 'frontLogoShirt': state.isFrontLogoTexture = !activeFilterTab[tabName]; break;
-      case 'backLogoShirt':  state.isBackLogoTexture  = !activeFilterTab[tabName]; break;
-      case 'frontTextShirt': state.isFrontText        = !activeFilterTab[tabName]; break;
-      case 'backTextShirt':  state.isBackText         = !activeFilterTab[tabName]; break;
-      case 'stylishShirt':   state.isFullTexture      = !activeFilterTab[tabName]; break;
-      case 'downloadShirt':  downloadCanvasToImage(); break;
+      case 'backLogoShirt': state.isBackLogoTexture = !activeFilterTab[tabName]; break;
+      case 'frontTextShirt': state.isFrontText = !activeFilterTab[tabName]; break;
+      case 'backTextShirt': state.isBackText = !activeFilterTab[tabName]; break;
+      case 'stylishShirt': state.isFullTexture = !activeFilterTab[tabName]; break;
+      case 'downloadShirt': downloadCanvasToImage(); break;
       default: break;
     }
     setActiveFilterTab((prev) => ({ ...prev, [tabName]: !prev[tabName] }));
@@ -118,6 +118,7 @@ const Customizer = () => {
           />
         </motion.div>
 
+
         {/* Nhóm icon vàng – giữa đáy màn hình */}
         <motion.div className="filtertabs-container ui-layer" {...slideAnimation('up')}>
           {FilterTabs.map((tab) => (
@@ -129,6 +130,14 @@ const Customizer = () => {
               handleClick={() => handleActiveFilterTab(tab.name)}
             />
           ))}
+          {/* Checkout button cùng hàng */}
+          <CustomButton
+            type="filled"
+            title="Thanh Toán"
+            handleClick={() => nav('/checkout')}
+            customStyles="w-fit px-4 py-2 text-sm font-semibold rounded-lg bg-green-600 text-white"
+          />
+
         </motion.div>
       </AnimatePresence>
     </section>
