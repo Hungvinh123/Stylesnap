@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
+import CheckoutPage from './pages/CheckoutPage';
 
 // Route guard: đợi booting (rehydrate /me) xong mới quyết định
 function Protected({ children }) {
@@ -40,8 +41,8 @@ const AppLayout = ({ children }) => (
 );
 
 const router = createBrowserRouter([
-  { path: '/',       element: <AppLayout><Home /></AppLayout> },
-  { path: '/home',   element: <AppLayout><Home /></AppLayout> },
+  { path: '/', element: <AppLayout><Home /></AppLayout> },
+  { path: '/home', element: <AppLayout><Home /></AppLayout> },
   {
     path: '/customize',
     element: (
@@ -52,9 +53,10 @@ const router = createBrowserRouter([
       </AppLayout>
     ),
   },
-  { path: '/login',    element: <AppLayout><Login /></AppLayout> },
+  { path: '/checkout', element: <AppLayout><CheckoutPage /></AppLayout> },
+  { path: '/login', element: <AppLayout><Login /></AppLayout> },
   { path: '/register', element: <AppLayout><Register /></AppLayout> },
-  { path: '*',         element: <Navigate to="/home" replace /> }
+  { path: '*', element: <Navigate to="/home" replace /> }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
