@@ -17,22 +17,40 @@ const CheckoutPage = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleConfirm = () => {
-    if (!form.name || !form.phone || !form.address) {
-      return alert("Vui lòng nhập đầy đủ thông tin giao hàng");
-    }
-    if (!method) {
-      return alert("Vui lòng chọn phương thức thanh toán");
-    }
+  const handleConfirm = async () => {
+  if (!form.name || !form.phone || !form.address) {
+    return alert("Vui lòng nhập đầy đủ thông tin giao hàng");
+  }
+  if (!method) {
+    return alert("Vui lòng chọn phương thức thanh toán");
+  }
 
-    if (method === "cod") {
-      alert(`Đặt hàng thành công! Sẽ giao tới ${form.address}`);
-    } else if (method === "qr") {
-      alert("Vui lòng quét mã QR để thanh toán.");
-    }
+  // chụp preview canvas (nếu đang ở Customizer thì sẽ có canvas)
+  const canvas = document.querySelector("canvas");
+  const preview = canvas ? canvas.toDataURL("image/png") : null;
 
-    nav("/home"); // quay về trang chủ sau khi đặt
-  };
+  try {
+    await fetch("http://localhost:3000/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        preview,
+      }),
+    });
+  } catch (e) {
+    console.error("Gửi mail thất bại", e);
+  }
+
+  if (method === "cod") {
+    alert(`Đặt hàng thành công! Sẽ giao tới ${form.address}`);
+  } else if (method === "qr") {
+    alert("Vui lòng quét mã QR để thanh toán.");
+  }
+
+  nav("/home");
+};
+
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center py-10 bg-gray-50">

@@ -7,6 +7,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'node:url';
 import { getPool } from './db.js';
 import authRoutes from './routes/auth.js';
+import orderRoutes from "./routes/order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -22,6 +23,7 @@ app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use("/api/order", orderRoutes);
 
 // Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
