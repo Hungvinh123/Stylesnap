@@ -13,7 +13,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
-import PaymentReturn from './pages/PaymentReturn';
+import CheckoutPage from './pages/CheckoutPage';
+
 // Route guard: đợi booting (rehydrate /me) xong mới quyết định
 function Protected({ children }) {
   const { user, booting } = useAuth();
@@ -32,26 +33,16 @@ function Protected({ children }) {
   return children;
 }
 
-// Theo dõi chuyển trang để bắn GA page_view
-function AnalyticsRouter() {
-  const location = useLocation();
-  React.useEffect(() => {
-    pageview(location.pathname + location.search);
-  }, [location]);
-  return null;
-}
-
 const AppLayout = ({ children }) => (
   <div className="min-h-screen bg-white">
     <Header />
-    <AnalyticsRouter />   {/* <-- THÊM */}
     {children}
   </div>
 );
 
 const router = createBrowserRouter([
-  { path: '/',       element: <AppLayout><Home /></AppLayout> },
-  { path: '/home',   element: <AppLayout><Home /></AppLayout> },
+  { path: '/', element: <AppLayout><Home /></AppLayout> },
+  { path: '/home', element: <AppLayout><Home /></AppLayout> },
   {
     path: '/customize',
     element: (
@@ -61,25 +52,18 @@ const router = createBrowserRouter([
         </Protected>
       </AppLayout>
     ),
-    
   },
-  { path: '/payment-return', element: <AppLayout><PaymentReturn/></AppLayout> },
-  { path: '/login',    element: <AppLayout><Login /></AppLayout> },
+  { path: '/checkout', element: <AppLayout><CheckoutPage /></AppLayout> },
+  { path: '/login', element: <AppLayout><Login /></AppLayout> },
   { path: '/register', element: <AppLayout><Register /></AppLayout> },
-  { path: '*',         element: <Navigate to="/home" replace /> }
+  { path: '*', element: <Navigate to="/home" replace /> }
 ]);
-
-// Component boot để init GA một lần
-function Boot() {
-  React.useEffect(() => { initGA(); }, []);
-  return <RouterProvider router={router} />;
-}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <NotifyProvider>
     <AuthProvider>
       <ToastContainer />
-      <Boot />
+      <RouterProvider router={router} />
     </AuthProvider>
   </NotifyProvider>
 );

@@ -7,63 +7,45 @@ import cors from 'cors';
 import { fileURLToPath } from 'node:url';
 import { getPool } from './db.js';
 import authRoutes from './routes/auth.js';
-import downloadRoutes from './routes/download.js';
-import designRoutes from './routes/designs.js';
-import paymentRoutes from './routes/payment.js';
+import orderRoutes from "./routes/order.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-// Mở kết nối DB (không chặn server nếu fail)
-getPool().catch(err => {
-  console.warn('[DB] connect failed (server vẫn chạy):', err?.message || err);
-});
+// mở kết nối DB sớm
+await getPool();
 
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
-const NODE_ENV = process.env.NODE_ENV || 'development';
-console.log(`[BOOT] NODE_ENV = ${NODE_ENV}`);
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
-// API
+// API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/download', downloadRoutes);
-app.use('/api/designs', designRoutes);
-app.use('/api/payment', paymentRoutes);
+app.use("/api/order", orderRoutes);
+
 // Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-// --------- SPA (Dev: Vite middleware / Prod: static dist) ----------
-if (NODE_ENV !== 'production') {
-  console.log('[WEB] Using Vite middleware (dev)');
+// ---------- SPA fallback ----------
+if (process.env.NODE_ENV !== 'production') {
   const { createServer } = await import('vite');
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    appType: 'custom',
-  });
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
   app.use(vite.middlewares);
 
   app.get(/^(?!\/api\/).*/, async (req, res, next) => {
     try {
       const url = req.originalUrl;
-      const htmlPath = path.resolve(process.cwd(), 'index.html');
-      const rawHtml = await fs.readFile(htmlPath, 'utf8');
-      const transformed = await vite.transformIndexHtml(url, rawHtml);
+      const html = await fs.readFile(path.resolve(process.cwd(), 'index.html'), 'utf8');
+      const transformed = await vite.transformIndexHtml(url, html);
       res.status(200).set({ 'Content-Type': 'text/html' }).end(transformed);
-    } catch (e) {
-      vite.ssrFixStacktrace?.(e);
-      next(e);
-    }
+    } catch (e) { vite.ssrFixStacktrace?.(e); next(e); }
   });
 } else {
-  console.log('[WEB] Serving dist/ (prod)');
   const distDir = path.resolve(__dirname, '../../dist');
   app.use(express.static(distDir));
-  app.get(/^(?!\/api\/).*/, (_req, res) => {
-    res.sendFile(path.join(distDir, 'index.html'));
-  });
+  app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(path.join(distDir, 'index.html')));
 }
 
 // Error handler
@@ -74,7 +56,4 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`[BOOT] Server running at http://localhost:${port}`);
-  console.log(`[WEB] Visit http://localhost:${port} (dev mode should HMR with Vite)`);
-});
+app.listen(port, () => console.log(`Server on http://localhost:${port}`));
