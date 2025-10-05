@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
+import DesignList from "../components/DesignList";
 
 import Stage from '../components/Stage';
 import { CustomButton } from '../components';
@@ -25,8 +26,8 @@ const Home = () => {
       <Stage />
 
       {/* Hero copy + CTA */}
-      <AnimatePresence>
-        <motion.section className="home ui-layer" {...slideAnimation('left')}>
+      <AnimatePresence mode="wait">
+        <motion.section key="home-hero" className="home ui-layer" {...slideAnimation('left')}>
           <motion.header {...slideAnimation('down')}>
             <img src="/threejs.png" alt="logo" className="w-8 h-8 object-contain" />
           </motion.header>
@@ -54,6 +55,12 @@ const Home = () => {
           </motion.div>
         </motion.section>
       </AnimatePresence>
+
+      {/* ✅ Design gallery */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold mb-4">Your Designs</h2>
+        <DesignList userId={user?.id} />
+      </div>
     </section>
   );
 };
