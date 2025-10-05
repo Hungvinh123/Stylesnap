@@ -1,14 +1,54 @@
 // src/components/TextControls.jsx
 import React from 'react';
 import { useSnapshot } from 'valtio';
-import { SketchPicker } from 'react-color';
 import state from '../store';
 import { logEvent } from '../lib/ga';
+
+// (Có thể rút gọn/bổ sung theo nhu cầu UI của team)
+const TEXT_COLORS = [
+  { hex: '#000000', label: 'Đen' },
+  { hex: '#FFFFFF', label: 'Trắng' },
+  { hex: '#FF0000', label: 'Đỏ' },
+  { hex: '#1E40AF', label: 'Xanh bích' },
+  { hex: '#16A34A', label: 'Xanh lá' },
+  { hex: '#EAB308', label: 'Vàng' },
+  { hex: '#F97316', label: 'Cam' },
+  { hex: '#BE185D', label: 'Hồng sen' },
+  { hex: '#7C3AED', label: 'Tím' },
+  { hex: '#8B4513', label: 'Nâu' },
+  { hex: '#6B7280', label: 'Xám' },
+  { hex: '#06B6D4', label: 'Xanh ngọc' },
+];
 
 const fonts = [
   "Arial","Times New Roman","Segoe UI","Tahoma","Calibri","Frutiger","Helvetica","Futura PT","Myriad Pro","Open Sans","Roboto","Verdana",
   "Adobe Arabic","Droid Arabic Naskh","GE SS Unique Light","Simplon Norm Arabic","Neue Helvetica Arabic","Noto Naskh Arabic","Ubuntu Arabic","Waseem","Zuhair","Dubai","Amiri","Bukra","Bahij Nazanin","Kufam","Lalezar","Mirza","Sakkal Majalla","Scheherazade","Tajawal","Lateef","Reem Kufi","Almarai","Cairo","Harmattan","Janna LT","Mada","Muna","JF Flat","JF Hitham","JF Nizar","JF Deco","JF Ziba","JF Unicode Naskh","JF Typist","JF Flat Arabic","JF Nizar Serif","JF Zaytoon","JF Zuhair","JF Deco Arabic","JF Hujjat","JF Noon","JF Raya","JF Riqa","JF Tulisan","JF Adeeb","JF Zarkan","JF Besmellah","JF Noori Nastaleeq","JF Noori Nastaleeq Kasheeda","JF Noori Nastaleeq V1.0","JF Noori Nastaleeq V2.0","JF Noori Nastaleeq V3.0","JF Noori Nastaleeq V4.0","JF Noori Nastaleeq V5.0","JF Noori Nastaleeq V6.0","JF Noori Nastaleeq V7.0","JF Noori Nastaleeq V8.0","JF Noori Nastaleeq V9.0","JF Noori Nastaleeq V10.0","JF Noori Nastaleeq V11.0","JF Noori Nastaleeq V12.0","JF Noori Nastaleeq V13.0","JF Noori Nastaleeq V14.0"
 ];
+
+// Swatch nhỏ dùng chung cho Front/Back
+function ColorSwatches({ current, onPick }) {
+  return (
+    <div className="grid grid-cols-6 gap-1">
+      {TEXT_COLORS.map(c => {
+        const active = (current || '').toLowerCase() === c.hex.toLowerCase();
+        return (
+          <button
+            key={c.hex}
+            type="button"
+            aria-label={c.label}
+            title={c.label}
+            onClick={() => onPick(c.hex)}
+            className={[
+              'h-6 w-6 rounded ring-2 transition',
+              active ? 'ring-black scale-[1.08]' : 'ring-transparent hover:ring-black/40'
+            ].join(' ')}
+            style={{ backgroundColor: c.hex }}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 const TextControls = () => {
   const snap = useSnapshot(state);
@@ -18,7 +58,6 @@ const TextControls = () => {
     if (type === 'front') {
       const wasEmpty = !snap.frontText || snap.frontText.length === 0;
       state.frontText = next;
-      // Log GA khi người dùng lần đầu nhập text (từ rỗng -> có nội dung)
       if (wasEmpty && next.trim().length > 0) {
         try {
           logEvent('add_text', {
@@ -78,11 +117,11 @@ const TextControls = () => {
     }
   };
 
-  const handleColorChange = (type, value) => {
+  const handleColorChange = (type, hex) => {
     if (type === 'front') {
-      state.frontTextColor = value;
+      state.frontTextColor = hex;
     } else if (type === 'back') {
-      state.backTextColor = value;
+      state.backTextColor = hex;
     }
   };
 
@@ -220,12 +259,12 @@ const TextControls = () => {
         </select>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <span className="text-gray-700">FC:</span>
-        <SketchPicker
-          color={snap.frontTextColor || '#000000'}
-          disableAlpha
-          onChange={(c) => handleColorChange('front', c.hex)}
+      {/* FC: lưới màu preset thay cho SketchPicker */}
+      <div className="space-y-1">
+        <div className="text-gray-700">FC:</div>
+        <ColorSwatches
+          current={snap.frontTextColor || '#000000'}
+          onPick={(hex) => handleColorChange('front', hex)}
         />
       </div>
 
@@ -361,12 +400,12 @@ const TextControls = () => {
         </select>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <span className="text-gray-700">BC:</span>
-        <SketchPicker
-          color={snap.backTextColor || '#000000'}
-          disableAlpha
-          onChange={(c) => handleColorChange('back', c.hex)}
+      {/* BC: lưới màu preset thay cho SketchPicker */}
+      <div className="space-y-1">
+        <div className="text-gray-700">BC:</div>
+        <ColorSwatches
+          current={snap.backTextColor || '#000000'}
+          onPick={(hex) => handleColorChange('back', hex)}
         />
       </div>
     </div>
