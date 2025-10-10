@@ -34,7 +34,7 @@ export default function Login() {
   return (
     <div className="page-wrap flex items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl border p-6 shadow-sm bg-white">
-        <h2 className="text-2xl font-semibold mb-4">Login</h2>
+        <h2 className="text-2xl font-semibold mb-4">Đăng nhập</h2>
         {err && <div className="mb-3 text-sm text-red-600">{err}</div>}
         <label className="block mb-3">
           <span className="text-sm text-gray-600">Email</span>
@@ -47,7 +47,7 @@ export default function Login() {
           />
         </label>
         <label className="block mb-4">
-          <span className="text-sm text-gray-600">Password</span>
+          <span className="text-sm text-gray-600">Mật khẩu</span>
           <input
             className="mt-1 w-full border rounded-xl px-3 py-2"
             type="password"
@@ -57,7 +57,7 @@ export default function Login() {
           />
         </label>
 
-        <button type="submit" className="w-full rounded-xl bg-black text-white py-2">Login</button>
+        <button type="submit" className="w-full rounded-xl bg-black text-white py-2">Đăng nhập</button>
 
         <div className="mt-3">
           {/* Server sẽ đặt cookie + redirect lại next */}
@@ -65,7 +65,7 @@ export default function Login() {
         </div>
 
         <div className="mt-4 text-center text-sm text-gray-600">
-          Chưa có tài khoản? <Link className="text-black underline" to="/register">Register</Link>
+          Chưa có tài khoản? <Link className="text-black underline" to="/register">Đăng ký</Link>
         </div>
       </form>
     </div>

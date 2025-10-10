@@ -33,16 +33,16 @@ export default function Header() {
 
           {/* CENTER: Main Nav */}
           <nav className="flex-1 flex items-center justify-center gap-2">
-            <NavLink to="/home" className={active}>Home</NavLink>
-            <NavLink to="/customize" className={active}>Customize</NavLink>
+            <NavLink to="/home" className={active}>Trang chủ</NavLink>
+            <NavLink to="/customize" className={active}>Tạo mẫu mới</NavLink>
           </nav>
 
           {/* RIGHT: Auth/User area */}
           <div className="flex-none ml-auto flex items-center gap-2 min-w-0">
             {!user && (
               <>
-                <NavLink to="/login" className={active}>Login</NavLink>
-                <NavLink to="/register" className={active}>Register</NavLink>
+                <NavLink to="/login" className={active}>Đăng nhập</NavLink>
+                <NavLink to="/register" className={active}>Đăng ký</NavLink>
               </>
             )}
 
@@ -53,13 +53,13 @@ export default function Header() {
                   className="max-w-[200px] sm:max-w-[260px] truncate text-sm text-gray-700"
                   title={displayName}
                 >
-                  Hi,&nbsp;{displayName}
+                 Xin chào,&nbsp;{displayName}
                 </span>
                 <button
                   className="shrink-0 px-3 py-2 rounded-xl text-sm bg-gray-900 text-white hover:opacity-90"
                   onClick={doLogout}
                 >
-                  Logout
+                  Đăng xuất
                 </button>
               </div>
             )}

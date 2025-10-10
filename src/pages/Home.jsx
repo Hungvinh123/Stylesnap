@@ -33,32 +33,33 @@ const Home = () => {
           </motion.header>
 
           <motion.div className="home-content" {...headContainerAnimation}>
-            <motion.div {...headTextAnimation}>
-              <h1 className="head-text">
-                LET&apos;S <br className="xl:block hidden" /> DO IT.
-              </h1>
-            </motion.div>
+  <motion.div {...headTextAnimation}>
+    <h1 className="head-text">
+      BẮT ĐẦU<br className="xl:block hidden" /> NGAY.
+    </h1>
+  </motion.div>
 
-            <motion.div {...headContentAnimation} className="flex flex-col gap-5">
-              <p className="max-w-md font-normal text-gray-600 text-base">
-                Create your unique and exclusive shirt with our brand-new 3D customization tool.{' '}
-                <strong>Unleash your imagination</strong> and define your own style.
-              </p>
+  <motion.div {...headContentAnimation} className="flex flex-col gap-5">
+    <p className="max-w-md font-normal text-gray-600 text-base">
+      Tạo chiếc áo độc bản của riêng bạn với công cụ tùy biến 3D hoàn toàn mới.{' '}
+      <strong>Thỏa sức tưởng tượng</strong> và khẳng định phong cách của riêng bạn.
+    </p>
 
-              <CustomButton
-                type="filled"
-                title="Customize It"
-                handleClick={handleCustomize}
-                customStyles="w-fit px-4 py-2.5 font-bold text-sm"
-              />
-            </motion.div>
-          </motion.div>
+    <CustomButton
+      type="filled"
+      title="Thiết kế ngay"
+      handleClick={handleCustomize}
+      customStyles="w-fit px-4 py-2.5 font-bold text-sm"
+    />
+  </motion.div>
+</motion.div>
+
         </motion.section>
       </AnimatePresence>
 
       {/* ✅ Design gallery */}
       <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4">Your Designs</h2>
+        <h2 className="text-xl font-bold mb-4">Mẫu thiết kế của bạn</h2>
         <DesignList userId={user?.id} />
       </div>
     </section>

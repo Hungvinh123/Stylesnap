@@ -34,11 +34,11 @@ export default function Register() {
   return (
     <div className="page-wrap flex items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl border p-6 shadow-sm bg-white">
-        <h2 className="text-2xl font-semibold mb-4">Create Account</h2>
+        <h2 className="text-2xl font-semibold mb-4">Tạo tài khoản mới</h2>
         {err && <div className="mb-3 text-sm text-red-600">{err}</div>}
 
         <label className="block mb-3">
-          <span className="text-sm text-gray-600">Full name</span>
+          <span className="text-sm text-gray-600">Họ và tên</span>
           <input
             className="mt-1 w-full border rounded-xl px-3 py-2"
             value={form.full_name}
@@ -58,7 +58,7 @@ export default function Register() {
         </label>
 
         <label className="block mb-4">
-          <span className="text-sm text-gray-600">Password</span>
+          <span className="text-sm text-gray-600">Mật khẩu</span>
           <input
             className="mt-1 w-full border rounded-xl px-3 py-2"
             type="password"
@@ -68,14 +68,14 @@ export default function Register() {
           />
         </label>
 
-        <button type="submit" className="w-full rounded-xl bg-black text-white py-2">Register</button>
+        <button type="submit" className="w-full rounded-xl bg-black text-white py-2">Đăng ký ngay</button>
 
         <div className="mt-3">
           <GoogleLoginButton next={next} onDone={() => nav(next)} />
         </div>
 
         <div className="mt-4 text-center text-sm text-gray-600">
-          Đã có tài khoản? <Link className="text-black underline" to="/login">Login</Link>
+          Đã có tài khoản? <Link className="text-black underline" to="/login">Đăng nhập</Link>
         </div>
       </form>
     </div>

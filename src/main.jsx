@@ -23,7 +23,7 @@ function Protected({ children }) {
   if (booting) {
     return (
       <div className="w-full h-screen grid place-items-center text-gray-500">
-        Loading…
+        Đang tải…
       </div>
     );
   }
