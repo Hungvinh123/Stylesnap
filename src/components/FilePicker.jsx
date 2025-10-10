@@ -31,11 +31,11 @@ const FilePicker = ({ file, setFile, readFile }) => {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
         <label htmlFor="file-upload" className="filepicker-label">
-          Upload File
+          Tải ảnh lên
         </label>
 
         <p className="mt-2 text-gray-500 text-xs truncate">
-          {!file ? 'No file selected' : file.name}
+          {!file ? 'Chưa tải tệp lên' : file.name}
         </p>
       </div>
 
@@ -49,7 +49,7 @@ const FilePicker = ({ file, setFile, readFile }) => {
         />
         <CustomButton
           type="filled"
-          title="Full"
+          title="Toàn thân"
           handleClick={() => handleApply('full')}
           customStyles="text-xs"
         />

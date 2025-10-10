@@ -10,7 +10,7 @@ export default function DesignList({ userId }) {
       .catch(err => console.error("Fetch designs error:", err));
   }, [userId]);
 
-  if (!designs.length) return <p>No designs yet. Start customizing!</p>;
+  if (!designs.length) return <p>Chưa có mẫu thiết kế nào. Bắt đầu thiết kế ngay!</p>;
 
   return (
     <div className="grid grid-cols-3 gap-4 mt-6">
@@ -20,11 +20,11 @@ export default function DesignList({ userId }) {
             <img src={d.thumbnailUrl} alt={d.title} className="w-full h-40 object-cover rounded" />
           ) : (
             <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500">
-              No Thumbnail
+              Không có ảnh
             </div>
           )}
           <h3 className="mt-2 text-lg font-semibold">{d.title}</h3>
-          <p className="text-sm text-gray-500">Created: {new Date(d.createdAt).toLocaleString()}</p>
+          <p className="text-sm text-gray-500">Tạo vào: {new Date(d.createdAt).toLocaleString()}</p>
         </div>
       ))}
     </div>

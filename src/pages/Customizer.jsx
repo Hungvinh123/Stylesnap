@@ -384,7 +384,7 @@ const Customizer = () => {
             ].join(' ')}
             style={{ pointerEvents: 'auto' }}
           >
-            ↶ Undo
+            ↶ Làm lại
           </button>
           <button
             onClick={doRedo}
@@ -398,7 +398,7 @@ const Customizer = () => {
             ].join(' ')}
             style={{ pointerEvents: 'auto' }}
           >
-            ↷ Redo
+            ↷ Tiếp tục
           </button>
         </motion.div>
 

@@ -46,21 +46,21 @@ const TextureLogoPicker = ({ texturesLogos = [], handleTextureLogoClick }) => {
   return (
     <div className="absolute left-full ml-3 space-y-2">
       <div>
-        <h2 className="font-medium mb-1">Textures</h2>
+        <h2 className="font-medium mb-1">Hoạ tiết</h2>
         <div className="flex flex-wrap overflow-y-scroll w-40 h-40">
           {renderImages(textures)}
         </div>
       </div>
 
       <div>
-        <h2 className="font-medium mb-1">Front Logos</h2>
+        <h2 className="font-medium mb-1">Logo trước</h2>
         <div className="flex flex-wrap overflow-y-scroll w-40 h-40">
           {renderImages(frontLogos)}
         </div>
       </div>
 
       <div>
-        <h2 className="font-medium mb-1">Back Logos</h2>
+        <h2 className="font-medium mb-1">Logo sau</h2>
         <div className="flex flex-wrap overflow-y-scroll w-40 h-40">
           {renderImages(backLogos)}
         </div>

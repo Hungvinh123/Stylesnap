@@ -10,7 +10,7 @@ export default function GoogleLoginButton() {
       onClick={() => { window.location.href = to; }}
       title="Sign in with Google"
     >
-      Continue with Google
+      Tiếp tục với Google
     </button>
   );
 }
