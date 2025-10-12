@@ -3,7 +3,10 @@ import * as THREE from 'three';
 import { easing } from 'maath';
 import { useSnapshot } from 'valtio';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Decal, useGLTF, useTexture, OrbitControls } from '@react-three/drei';
+import { Decal, useGLTF, OrbitControls } from '@react-three/drei';
+import { TextureLoader } from 'three';
+import { useLoader } from '@react-three/fiber';
+import { prox } from '../config/helpers';
 
 import state from '../store';
 
@@ -11,10 +14,9 @@ const Shirt = () => {
   const snap = useSnapshot(state);
   const { nodes, materials } = useGLTF('/shirt.glb');
 
-  const logoTexture = useTexture(snap.frontLogoDecal);
-  const fullTexture = useTexture(snap.fullDecal);
-  const backLogoTexture = useTexture(snap.backLogoDecal);
-
+  const logoTexture = useLoader(TextureLoader, prox(snap.frontLogoDecal || ''), (ldr)=>ldr.setCrossOrigin('anonymous'));
+  const fullTexture = useLoader(TextureLoader, prox(snap.fullDecal || ''), (ldr)=>ldr.setCrossOrigin('anonymous'));
+  const backLogoTexture = useLoader(TextureLoader, prox(snap.backLogoDecal || ''), (ldr)=>ldr.setCrossOrigin('anonymous'));
   useFrame((state, delta) => easing.dampC(materials.lambert1.color, snap.color, 0.25, delta));
 
   const stateString = JSON.stringify(snap);
