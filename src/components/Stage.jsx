@@ -1,5 +1,5 @@
+// src/components/Stage.jsx
 import React, { Suspense } from 'react';
-// CanvasModel là export default của src/canvas/index.jsx
 import CanvasModel from '../canvas';
 
 export default function Stage() {

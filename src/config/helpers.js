@@ -53,3 +53,14 @@ export const trackExportDesign = (s = {}) => {
     /* analytics optional – ignore */
   }
 };
+
+// chuyển URL ảnh ngoài domain qua proxy backend để thêm CORS headers
+export const prox = (u) => {
+  try {
+    if (!u) return u;
+    if (/^data:/.test(u)) return u;
+    if (/^https?:\/\//i.test(u)) return `/api/img?url=${encodeURIComponent(u)}`;
+    return u;
+  } catch { return u; }
+};
+

@@ -1,147 +1,127 @@
 // src/pages/CheckoutPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import state from "../store";
 
-const CheckoutPage = () => {
+function Notice({ kind = "pending", title, message }) {
+  const color =
+    kind === "success" ? "bg-green-50 text-green-700 ring-green-600/20" :
+    kind === "error"   ? "bg-red-50 text-red-700 ring-red-600/20" :
+                         "bg-amber-50 text-amber-800 ring-amber-600/20";
+  const icon = kind === "success" ? "✔" : kind === "error" ? "✖" : "…";
+  return (
+    <div className={["w-[300px] rounded-xl ring-1 px-3 py-2 shadow-sm", "backdrop-blur-sm", color].join(" ")}>
+      <div className="flex items-start gap-2">
+        <div className="text-base leading-none">{icon}</div>
+        <div className="min-w-0">
+          <div className="font-semibold truncate">{title}</div>
+          {message ? <div className="text-xs mt-0.5 leading-snug break-words">{message}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CheckoutPage() {
   const [method, setMethod] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
-
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
+  const [payNotice, setPayNotice] = useState({ visible:false, kind:"pending", title:"", message:"" });
   const nav = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  async function createOrder(payload) {
+    const res = await fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    try { return await res.json(); } catch { return { ok:true }; }
+  }
 
   const handleConfirm = async () => {
-  if (!form.name || !form.phone || !form.address) {
-    return alert("Vui lòng nhập đầy đủ thông tin giao hàng");
-  }
-  if (!method) {
-    return alert("Vui lòng chọn phương thức thanh toán");
-  }
+    if (!form.name || !form.phone || !form.address)
+      return setPayNotice({ visible:true, kind:"error", title:"Thiếu thông tin giao hàng", message:"Nhập đủ họ tên, điện thoại, địa chỉ." });
+    if (!method)
+      return setPayNotice({ visible:true, kind:"error", title:"Chưa chọn phương thức", message:"Chọn COD hoặc QR." });
 
-  // chụp preview canvas (nếu đang ở Customizer thì sẽ có canvas)
-  const canvas = document.querySelector("canvas");
-  const preview = canvas ? canvas.toDataURL("image/png") : null;
+    setPayNotice({ visible:true, kind:"pending", title:"Đang tạo đơn…", message: method==="qr" ? "Sẽ hiển thị hướng dẫn thanh toán." : "" });
 
-  try {
-    await fetch("http://localhost:3000/api/order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        preview,
-      }),
-    });
-  } catch (e) {
-    console.error("Gửi mail thất bại", e);
-  }
+    // Lấy 3 ảnh (nếu có) từ lần “Lưu thiết kế” gần nhất – KHÔNG BẮT BUỘC
+    const sd = state.lastSavedDesign || {};
+    const payload = {
+      ...form,
+      method,
+      // thông tin để đính kèm ảnh vào email
+      previewFrontUrl: sd.previewFrontUrl || null,
+      previewBackUrl:  sd.previewBackUrl  || null,
+      userAssetUrl:    Array.isArray(sd.assets) && sd.assets[0]?.url ? sd.assets[0].url : null,
+      colorHex: state.color || null,
+      // nếu bạn vẫn muốn lưu quan hệ với bản thiết kế thì gửi kèm id (có cũng được, không có cũng không sao)
+      designId: sd.designId || null,
+    };
 
-  if (method === "cod") {
-    alert(`Đặt hàng thành công! Sẽ giao tới ${form.address}`);
-  } else if (method === "qr") {
-    alert("Vui lòng quét mã QR để thanh toán.");
-  }
+    try {
+      const resp = await createOrder(payload);
 
-  nav("/home");
-};
+      setPayNotice({
+        visible:true,
+        kind:"success",
+        title: method === "cod" ? "Đặt hàng COD thành công" : "Tạo yêu cầu thanh toán thành công",
+        message: resp?.orderNo ? `Mã đơn ${resp.orderNo}` : (method === "qr" ? "Vui lòng quét mã QR để hoàn tất" : "")
+      });
 
+      // Không còn khoá theo canCheckout nữa; có thể dọn dẹp state tuỳ ý
+      state.lastSavedDesign = null;
+
+      setTimeout(() => nav("/home"), 1200);
+    } catch (e) {
+      console.error(e);
+      setPayNotice({ visible:true, kind:"error", title:"Tạo đơn thất bại", message:"Thử lại hoặc đổi phương thức." });
+    }
+  };
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center py-10 bg-gray-50">
+      <div className="fixed top-4 left-4 z-50 space-y-2">
+        {payNotice.visible && <Notice kind={payNotice.kind} title={payNotice.title} message={payNotice.message} />}
+      </div>
+
       <h1 className="text-2xl font-bold mb-6">Thanh toán đơn hàng</h1>
 
-      {/* Form thông tin giao hàng */}
       <div className="w-full max-w-md bg-white p-6 rounded-lg shadow mb-6">
         <h2 className="text-lg font-semibold mb-4">Thông tin giao hàng</h2>
-
         <div className="flex flex-col gap-3">
-          <input
-            type="text"
-            name="name"
-            placeholder="Họ và tên"
-            value={form.name}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-          />
-          <input
-            type="text"
-            name="phone"
-            placeholder="Số điện thoại"
-            value={form.phone}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email (không bắt buộc)"
-            value={form.email}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-          />
-          <textarea
-            name="address"
-            placeholder="Địa chỉ giao hàng"
-            value={form.address}
-            onChange={handleChange}
-            className="border rounded px-3 py-2"
-          />
+          <input type="text" name="name" placeholder="Họ và tên" value={form.name} onChange={handleChange} className="border rounded px-3 py-2" />
+          <input type="text" name="phone" placeholder="Số điện thoại" value={form.phone} onChange={handleChange} className="border rounded px-3 py-2" />
+          <input type="email" name="email" placeholder="Email (không bắt buộc)" value={form.email} onChange={handleChange} className="border rounded px-3 py-2" />
+          <textarea name="address" placeholder="Địa chỉ giao hàng" value={form.address} onChange={handleChange} className="border rounded px-3 py-2" />
         </div>
       </div>
 
-      {/* Chọn phương thức thanh toán */}
       <div className="w-full max-w-md bg-white p-6 rounded-lg shadow mb-6">
         <h2 className="text-lg font-semibold mb-4">Phương thức thanh toán</h2>
         <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="method"
-              value="cod"
-              checked={method === "cod"}
-              onChange={() => setMethod("cod")}
-            />
-            Thanh toán khi nhận hàng (COD)
+            <input type="radio" name="method" value="cod" checked={method === "cod"} onChange={() => setMethod("cod")} /> COD
           </label>
-
           <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="method"
-              value="qr"
-              checked={method === "qr"}
-              onChange={() => setMethod("qr")}
-            />
-            Quét QR Code
+            <input type="radio" name="method" value="qr" checked={method === "qr"} onChange={() => setMethod("qr")} /> Quét QR Code
           </label>
         </div>
 
         {method === "qr" && (
           <div className="mt-4 p-4 border rounded bg-gray-50">
             <p className="mb-2">Quét mã QR sau để thanh toán:</p>
-            <img
-              src="/qrcode.jpg"
-              alt="QR Code"
-              className="w-48 h-48 mx-auto"
-            />
+            <img src="/qrcode.jpg" alt="QR Code" className="w-48 h-48 mx-auto" />
           </div>
         )}
       </div>
 
-      <button
-        onClick={handleConfirm}
-        className="px-6 py-3 bg-black text-white rounded-lg font-semibold"
-      >
+      <button onClick={handleConfirm} className="px-6 py-3 bg-black text-white rounded-lg font-semibold">
         Xác nhận đơn hàng
       </button>
     </div>
   );
-};
-
-export default CheckoutPage;
+}

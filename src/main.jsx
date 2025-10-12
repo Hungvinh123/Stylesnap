@@ -14,8 +14,8 @@ import Register from './pages/Register';
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
 import CheckoutPage from './pages/CheckoutPage';
+import MyDesigns from './pages/MyDesigns'; // ⬅️ thêm
 
-// Route guard: đợi booting (rehydrate /me) xong mới quyết định
 function Protected({ children }) {
   const { user, booting } = useAuth();
   const location = useLocation();
@@ -23,7 +23,7 @@ function Protected({ children }) {
   if (booting) {
     return (
       <div className="w-full h-screen grid place-items-center text-gray-500">
-        Đang tải…
+        Loading…
       </div>
     );
   }
@@ -43,6 +43,7 @@ const AppLayout = ({ children }) => (
 const router = createBrowserRouter([
   { path: '/', element: <AppLayout><Home /></AppLayout> },
   { path: '/home', element: <AppLayout><Home /></AppLayout> },
+
   {
     path: '/customize',
     element: (
@@ -53,6 +54,19 @@ const router = createBrowserRouter([
       </AppLayout>
     ),
   },
+
+  // ⬇️ trang danh sách mẫu thiết kế
+  {
+    path: '/designs',
+    element: (
+      <AppLayout>
+        <Protected>
+          <MyDesigns />
+        </Protected>
+      </AppLayout>
+    ),
+  },
+
   { path: '/checkout', element: <AppLayout><CheckoutPage /></AppLayout> },
   { path: '/login', element: <AppLayout><Login /></AppLayout> },
   { path: '/register', element: <AppLayout><Register /></AppLayout> },
