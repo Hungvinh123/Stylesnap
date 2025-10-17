@@ -1,5 +1,5 @@
 // src/pages/Customizer.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSnapshot } from 'valtio';
 import { useNavigate } from 'react-router-dom';
@@ -46,10 +46,8 @@ const isDataUrl = (u='') => /^data:/i.test(u);
 const isHttpUrl = (u='') => /^https?:\/\//i.test(u);
 const isBlobUrl = (u='') => /^blob:/i.test(u);
 const baseName  = (u='asset.jpg') => {
-  try {
-    const p = new URL(u, window.location.origin);
-    const name = decodeURIComponent(p.pathname.split('/').pop() || 'asset.jpg');
-    return name || 'asset.jpg';
+  try { const p = new URL(u, window.location.origin);
+    const name = decodeURIComponent(p.pathname.split('/').pop() || 'asset.jpg'); return name || 'asset.jpg';
   } catch { return 'asset.jpg'; }
 };
 // Route URL ngoài qua proxy backend để có CORS header
@@ -61,8 +59,7 @@ const prox = (u='') => {
 };
 
 async function dataUrlToFile(dataUrl, filename='asset.jpg') {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
+  const res = await fetch(dataUrl); const blob = await res.blob();
   return new File([blob], filename, { type: blob.type || 'image/jpeg' });
 }
 async function urlToFile(url, filename='asset.jpg') {
@@ -74,14 +71,11 @@ async function urlToFile(url, filename='asset.jpg') {
   const finalName = filename.endsWith(ext) || !ext ? filename : filename + ext;
   return new File([blob], finalName, { type: ct });
 }
-
-// Chuẩn hoá mọi kiểu input thành File (File | Blob | data: | blob: | http(s))
 const toFile = async (any, nameHint = `image-${Date.now()}.jpg`) => {
   if (any && typeof any === 'object' && 'name' in any && any instanceof File) return any;
   if (any instanceof Blob) return new File([any], nameHint, { type: any.type || 'application/octet-stream' });
   if (typeof any === 'string' && isDataUrl(any)) return await dataUrlToFile(any, nameHint);
-  if (typeof any === 'string' && (isBlobUrl(any) || isHttpUrl(any)))
-    return await urlToFile(any, baseName(any) || nameHint);
+  if (typeof any === 'string' && (isBlobUrl(any) || isHttpUrl(any))) return await urlToFile(any, baseName(any) || nameHint);
   throw new Error('UNSUPPORTED_FILE_INPUT');
 };
 /* ======================================================================== */
@@ -91,10 +85,8 @@ function ColorSwatchPopover({ currentHex, onSelect, side = 'right' }) {
   const placement = side === 'left'
     ? 'right-full mr-3 top-1/2 -translate-y-1/2'
     : 'left-full ml-3 top-1/2 -translate-y-1/2';
-
   const activeLabel =
     FABRIC_COLORS.find(x => x.hex.toLowerCase() === (currentHex || '').toLowerCase())?.label || '—';
-
   return (
     <div role="dialog" aria-label="Bảng màu vải"
       className={`absolute z-50 ${placement} w-52 rounded-2xl bg-white p-3 shadow-2xl ring-1 ring-black/5`}>
@@ -134,6 +126,115 @@ function Notice({ kind='pending', title, message }) {
   );
 }
 
+/* ========= Tour Overlay tối giản (inline) có hỗ trợ forceKey ========= */
+function getRect(selector) {
+  const el = document.querySelector(selector);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width, h: r.height };
+}
+function useStepRect(selector) {
+  const [rect, setRect] = useState(null);
+  useLayoutEffect(() => {
+    function update(){ setRect(getRect(selector)); }
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(document.documentElement);
+    window.addEventListener('scroll', update, { passive:true });
+    window.addEventListener('resize', update);
+    const id = setInterval(update, 250);
+    return () => { clearInterval(id); ro.disconnect();
+      window.removeEventListener('scroll', update); window.removeEventListener('resize', update);
+    };
+  }, [selector]);
+  return rect;
+}
+
+function TourOverlay({
+  steps,
+  storageKey = 'tour_customizer_v1',
+  forceKey   = 'tour_customizer_force',
+  onlyFirstTime = true,
+}) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const forced = localStorage.getItem(forceKey) === '1';
+    if (forced) { setVisible(true); return; }
+    if (onlyFirstTime) {
+      const seen = localStorage.getItem(storageKey);
+      if (!seen) setVisible(true);
+    } else setVisible(true);
+  }, [storageKey, forceKey, onlyFirstTime]);
+
+  const step = steps?.[index] ?? null;
+  const rect = useStepRect(step?.selector || '');
+  const tooltipStyle = useMemo(() => {
+    if (!rect) return { left: 24, top: 24 };
+    const gap = 8;
+    const place = step?.placement || 'right';
+    let top = rect.y, left = rect.x + rect.w + gap;
+    if (place === 'left')   { left = rect.x - 280 - gap; top = rect.y; }
+    if (place === 'top')    { left = rect.x; top = rect.y - 110 - gap; }
+    if (place === 'bottom') { left = rect.x; top = rect.y + rect.h + gap; }
+    return {
+      left: Math.max(16, Math.min(left, window.scrollX + window.innerWidth - 320)),
+      top: Math.max(16, Math.min(top, window.scrollY + window.innerHeight - 120)),
+    };
+  }, [rect, step]);
+
+  if (!visible || !step) return null;
+  const total = steps.length, isLast = index === total - 1;
+
+  const complete = () => {
+    localStorage.setItem(storageKey,'1');
+    localStorage.removeItem(forceKey); // quan trọng: xoá cờ ép hiển thị sau khi xem xong
+    setVisible(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] pointer-events-none" aria-label="Hướng dẫn sử dụng">
+      <div className="absolute inset-0 bg-black/40"></div>
+      {rect && (
+        <div
+          className="absolute rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.40)] bg-transparent"
+          style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, outline: '2px solid rgba(255,255,255,0.8)', transition: 'all 0.2s ease' }}
+        />
+      )}
+      <div className="absolute w-[300px] pointer-events-auto" style={tooltipStyle}>
+        <div className="rounded-xl bg-white shadow-xl ring-1 ring-black/10 p-3">
+          <div className="text-[11px] text-gray-500 mb-1">Hướng dẫn {index + 1}/{total}</div>
+          <div className="font-semibold">{step.title}</div>
+          {step.content && <div className="text-sm text-gray-700 mt-1">{step.content}</div>}
+          <div className="mt-3 flex items-center justify-between">
+            <button className="text-xs text-gray-500 hover:text-gray-700" onClick={complete}>
+              Bỏ qua
+            </button>
+            <div className="space-x-2">
+              {index > 0 && (
+                <button
+                  className="px-2 py-1 text-sm rounded-lg bg-gray-100 hover:bg-gray-200"
+                  onClick={() => setIndex(i => Math.max(0, i - 1))}
+                >
+                  Quay lại
+                </button>
+              )}
+              <button
+                className="px-2 py-1 text-sm rounded-lg bg-black text-white hover:bg-gray-900"
+                onClick={() => { if (isLast) complete(); else setIndex(i => Math.min(total - 1, i + 1)); }}
+              >
+                {isLast ? 'Hoàn tất' : 'Tiếp tục'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+/* ===================== /Tour Overlay ===================== */
+
 const Customizer = () => {
   const snap = useSnapshot(state);
   const nav = useNavigate();
@@ -169,7 +270,6 @@ const Customizer = () => {
     isFrontText: !!state.isFrontText,
     isBackText: !!state.isBackText,
   });
-
   const applySnapshot = (s) => {
     state.color = s.color;
     state.fullDecal = s.fullDecal;
@@ -188,49 +288,30 @@ const Customizer = () => {
       stylishShirt: s.isFullTexture,
     });
   };
-
-  const pushHistory = () => {
-    setHistory((h) => [...h.slice(-19), takeSnapshot()]);
-    setRedoStack([]); // reset redo khi có action mới
-  };
-
+  const pushHistory = () => { setHistory(h => [...h.slice(-19), takeSnapshot()]); setRedoStack([]); };
   const handleUndo = () => {
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      const last = h[h.length - 1];
-      const curr = takeSnapshot();
-      setRedoStack((r) => [...r, curr]);
-      applySnapshot(last);
-      return h.slice(0, -1);
+    setHistory(h => { if (!h.length) return h;
+      const last = h[h.length-1]; const curr = takeSnapshot();
+      setRedoStack(r => [...r, curr]); applySnapshot(last); return h.slice(0,-1);
     });
   };
-
   const handleRedo = () => {
-    setRedoStack((r) => {
-      if (r.length === 0) return r;
-      const nxt = r[r.length - 1];
-      const curr = takeSnapshot();
-      setHistory((h) => [...h, curr]);
-      applySnapshot(nxt);
-      return r.slice(0, -1);
+    setRedoStack(r => { if (!r.length) return r;
+      const nxt = r[r.length-1]; const curr = takeSnapshot();
+      setHistory(h => [...h, curr]); applySnapshot(nxt); return r.slice(0,-1);
     });
   };
 
   /* --------------------- Actions ---------------------- */
-  const handleSelectFabricColor = (hex) => {
-    pushHistory();
-    state.color = hex;
-  };
+  const handleSelectFabricColor = (hex) => { pushHistory(); state.color = hex; };
 
   const generateTabContent = () => {
     switch (activeEditorTab) {
-      case 'colorpicker':
-        return <ColorSwatchPopover currentHex={snap.color} onSelect={handleSelectFabricColor} side="right" />;
+      case 'colorpicker': return <ColorSwatchPopover currentHex={snap.color} onSelect={handleSelectFabricColor} side="right" />;
       case 'filepicker': return <FilePicker file={file} setFile={setFile} readFile={readFile} />;
       case 'logocontrols': return <LogoControls />;
       case 'textcontrols': return <TextControls />;
-      case 'texturelogopicker':
-        return <TextureLogoPicker texturesLogos={texturesLogos} handleTextureLogoClick={handleTextureLogoClick} />;
+      case 'texturelogopicker': return <TextureLogoPicker texturesLogos={texturesLogos} handleTextureLogoClick={handleTextureLogoClick} />;
       default: return null;
     }
   };
@@ -238,47 +319,25 @@ const Customizer = () => {
   // Bật/Tắt texture/logo có sẵn (toggle on/off) — KHÔNG xoá URL để tránh loader lỗi
   const handleTextureLogoClick = (textureLogo) => {
     const { type, image } = textureLogo;
-
     if (type === 'texture') {
       pushHistory();
       const isSameActive = snap.isFullTexture && snap.fullDecal === image;
-      if (isSameActive) {
-        // tắt chỉ bằng flag
-        state.isFullTexture = false;
-        setActiveFilterTab((p) => ({ ...p, stylishShirt: false }));
-      } else {
-        state.fullDecal = image;
-        state.isFullTexture = true;
-        setActiveFilterTab((p) => ({ ...p, stylishShirt: true }));
-      }
+      if (isSameActive) { state.isFullTexture = false; setActiveFilterTab(p => ({ ...p, stylishShirt:false })); }
+      else { state.fullDecal = image; state.isFullTexture = true; setActiveFilterTab(p => ({ ...p, stylishShirt:true })); }
       return;
     }
-
     if (type === 'frontLogo') {
       pushHistory();
       const isSameActive = snap.isFrontLogoTexture && snap.frontLogoDecal === image;
-      if (isSameActive) {
-        state.isFrontLogoTexture = false;
-        setActiveFilterTab((p) => ({ ...p, frontLogoShirt: false }));
-      } else {
-        state.frontLogoDecal = image;
-        state.isFrontLogoTexture = true;
-        setActiveFilterTab((p) => ({ ...p, frontLogoShirt: true }));
-      }
+      if (isSameActive) { state.isFrontLogoTexture = false; setActiveFilterTab(p => ({ ...p, frontLogoShirt:false })); }
+      else { state.frontLogoDecal = image; state.isFrontLogoTexture = true; setActiveFilterTab(p => ({ ...p, frontLogoShirt:true })); }
       return;
     }
-
     if (type === 'backLogo') {
       pushHistory();
       const isSameActive = snap.isBackLogoTexture && snap.backLogoDecal === image;
-      if (isSameActive) {
-        state.isBackLogoTexture = false;
-        setActiveFilterTab((p) => ({ ...p, backLogoShirt: false }));
-      } else {
-        state.backLogoDecal = image;
-        state.isBackLogoTexture = true;
-        setActiveFilterTab((p) => ({ ...p, backLogoShirt: true }));
-      }
+      if (isSameActive) { state.isBackLogoTexture = false; setActiveFilterTab(p => ({ ...p, backLogoShirt:false })); }
+      else { state.backLogoDecal = image; state.isBackLogoTexture = true; setActiveFilterTab(p => ({ ...p, backLogoShirt:true })); }
       return;
     }
   };
@@ -288,9 +347,7 @@ const Customizer = () => {
 
   const handleDecals = (type, result) => {
     const decalType = DecalTypes[type]; if (!decalType) return;
-    pushHistory();
-    state[decalType.stateProperty] = result;
-    ensureFilterOn(mapTypeToFilterTab(type));
+    pushHistory(); state[decalType.stateProperty] = result; ensureFilterOn(mapTypeToFilterTab(type));
   };
 
   const handleActiveFilterTab = (tabName) => {
@@ -304,7 +361,7 @@ const Customizer = () => {
       case 'downloadShirt': downloadCanvasToImage(); break;
       default: break;
     }
-    setActiveFilterTab((prev) => ({ ...prev, [tabName]: !prev[tabName] }));
+    setActiveFilterTab(prev => ({ ...prev, [tabName]: !prev[tabName] }));
   };
 
   /** Ghi lại file KH vừa chọn để sau này upload */
@@ -315,69 +372,50 @@ const Customizer = () => {
       try {
         const kindMap = { frontLogo: 'frontLogo', backLogo: 'backLogo', full: 'texture' };
         const kind = kindMap[type] || 'misc';
-        state.uploadedAssets = [
-          ...(state.uploadedAssets || []),
-          { kind, filename: file?.name || `${kind}.jpg`, file, dataUrl: result }
-        ];
+        state.uploadedAssets = [ ...(state.uploadedAssets || []), { kind, filename: file?.name || `${kind}.jpg`, file, dataUrl: result } ];
       } catch (e) { console.warn('save uploaded asset failed', e); }
     });
   };
 
   // ================== SAVE DESIGN (Supabase qua backend) ==================
   async function uploadViaSupabaseBackend(input, nameHint = `image-${Date.now()}.jpg`) {
-    const fileObj = await toFile(input, nameHint);           // luôn là File
-    const fd = new FormData();                                // FormData chuẩn
+    const fileObj = await toFile(input, nameHint);
+    const fd = new FormData();
     fd.append('file', fileObj, fileObj.name || nameHint);
     const res = await fetch(`${API_BASE}/api/uploads/sb`, { method:'POST', body: fd, credentials:'include' });
-    const text = await res.text();
-    let json = null; try { json = JSON.parse(text); } catch {}
+    const text = await res.text(); let json = null; try { json = JSON.parse(text); } catch {}
     if (!res.ok || !json) throw new Error(`SB_UPLOAD_FAILED ${res.status}: ${text.slice(0,200)}`);
     return json.publicUrl || json.signedUrl; // bucket public -> publicUrl
   }
 
   async function saveCurrentDesign() {
     setNotice({ visible:true, kind:'pending', title:'Đang lưu thiết kế…', message:'' });
-
     try {
-      // 1) chụp canvas (Stage đang mount tại /customize)
       const frontBlob = await (window.appCapture?.front?.() || null);
       const backBlob  = await (window.appCapture?.back?.()  || null);
       if (!frontBlob && !backBlob) throw new Error('NO_PREVIEW');
 
-      // 2) upload front/back
       let frontUrl = null, backUrl = null;
       if (frontBlob) frontUrl = await uploadViaSupabaseBackend(frontBlob, `${Date.now()}-front.jpg`);
       if (backBlob)  backUrl  = await uploadViaSupabaseBackend(backBlob,  `${Date.now()}-back.jpg`);
 
-      // 3) upload ảnh KH đã up + FALLBACK quét decal (data:, blob:, http(s))
-      const assets = [];
-      const pushed = new Set();
-
-      // 3.a) từ uploadedAssets
+      const assets = []; const pushed = new Set();
       const uploads = Array.isArray(state.uploadedAssets) ? state.uploadedAssets : [];
       for (let i = 0; i < uploads.length; i++) {
-        const a = uploads[i];
-        const filenameBase = a?.filename || `asset-${i}`;
-
-        let candidate = a?.file ?? a?.dataUrl ?? a?.url ?? null;
-        if (!candidate) continue;
-
+        const a = uploads[i]; const filenameBase = a?.filename || `asset-${i}`;
+        let candidate = a?.file ?? a?.dataUrl ?? a?.url ?? null; if (!candidate) continue;
         try {
           const url = await uploadViaSupabaseBackend(candidate, baseName(a?.filename || '') || (filenameBase + '.jpg'));
           if (!pushed.has(url)) { assets.push({ kind: a?.kind || 'misc', filename: baseName(url) || (filenameBase + '.jpg'), url }); pushed.add(url); }
         } catch (err) { console.warn('upload asset failed, continue:', err); }
       }
-
-      // 3.b) FALLBACK từ các decal đang áp dụng
       const fallbacks = [
         { kind:'frontLogo', src: state.frontLogoDecal },
         { kind:'backLogo',  src: state.backLogoDecal },
         { kind:'texture',   src: state.fullDecal },
       ];
       for (const fb of fallbacks) {
-        const src = fb.src;
-        if (!src) continue;
-
+        const src = fb.src; if (!src) continue;
         try {
           const url = await uploadViaSupabaseBackend(src, `${fb.kind}-${Date.now()}.jpg`);
           if (!pushed.has(url)) { assets.push({ kind: fb.kind, filename: baseName(url) || `${fb.kind}.jpg`, url }); pushed.add(url); }
@@ -399,13 +437,25 @@ const Customizer = () => {
     }
   }
 
+  /* ========== Các bước TOUR ========== */
+  const steps = [
+    { selector: '[data-tour="color-tab"]',      title: 'Chọn màu áo',       content: 'Bấm để mở bảng màu. Popover giữ mở cho tới khi bấm lại.', placement: 'right' },
+    { selector: '[data-tour="filepicker-tab"]', title: 'Tải ảnh của bạn',   content: 'Chọn ảnh từ máy để dán lên áo (logo/hoạ tiết).',           placement: 'right' },
+    { selector: '[data-tour="texture-tab"]',    title: 'Hoạ tiết có sẵn',   content: 'Bấm để bật, bấm lại đúng mẫu để tắt.',                     placement: 'right' },
+    { selector: '[data-tour="text-tab"]',       title: 'Thêm chữ',          content: 'Nhập nội dung, chọn font, điều chỉnh vị trí/độ lớn/góc xoay.', placement: 'right' },
+    { selector: '[data-tour="filters"]',        title: 'Bật/tắt lớp',       content: 'Logo trước/sau, chữ trước/sau, phủ toàn áo.',              placement: 'top' },
+    { selector: '[data-tour="undo-area"]',      title: 'Hoàn tác/Làm lại',  content: 'Sai thì Undo, muốn quay lại thì Redo. Trạng thái lưu hiện ở đây.', placement: 'right' },
+    { selector: '[data-tour="save-btn"]',       title: 'Lưu thiết kế',      content: 'Chụp mặt trước/sau + upload ảnh khách lên kho (Supabase).', placement: 'top' },
+    { selector: '[data-tour="checkout-btn"]',   title: 'Thanh toán',        content: 'Điền thông tin, chọn COD/QR. Email đơn có thể đính kèm 3 ảnh.', placement: 'top' },
+  ];
+
   return (
     <section className="page-wrap">
       <Stage />
       <PolicyNudge policyUrl="/policy/asset-guidelines" />
 
       {/* Góc trái trên: Undo/Redo + Notice */}
-      <div className="fixed top-4 left-4 z-50 space-y-2">
+      <div className="fixed top-4 left-4 z-50 space-y-2" data-tour="undo-area">
         <div className="flex gap-2">
           <button
             onClick={handleUndo}
@@ -423,23 +473,33 @@ const Customizer = () => {
         {notice.visible && <Notice kind={notice.kind} title={notice.title} message={notice.message} />}
       </div>
 
+      {/* TOUR overlay: lần đầu + khi có forceKey */}
+      <TourOverlay steps={steps} storageKey="tour_customizer_v1" forceKey="tour_customizer_force" />
+
       <AnimatePresence>
-        {/* THÊM key cho từng con để tránh cảnh báo trùng key */}
+        {/* Panel trái */}
         <motion.div key="panel-left" className="panel-left" {...slideAnimation('left')}>
           <div className="editortabs-container tabs relative">
-            {EditorTabs.map((tab) => (
-              <Tab
-                key={tab.name}
-                tab={tab}
-                handleClick={() => {
-                  if (tab.name === 'colorpicker') {
-                    setActiveEditorTab((prev) => (prev === 'colorpicker' ? '' : 'colorpicker'));
-                  } else {
-                    setActiveEditorTab(tab.name);
-                  }
-                }}
-              />
-            ))}
+            {EditorTabs.map((tab) => {
+              const content = (
+                <Tab
+                  tab={tab}
+                  handleClick={() => {
+                    if (tab.name === 'colorpicker') {
+                      setActiveEditorTab(prev => (prev === 'colorpicker' ? '' : 'colorpicker'));
+                    } else {
+                      setActiveEditorTab(tab.name);
+                    }
+                  }}
+                />
+              );
+              // gắn data-tour tối thiểu, tránh thay đổi lớn
+              if (tab.name === 'colorpicker')   return <span key={tab.name} data-tour="color-tab">{content}</span>;
+              if (tab.name === 'filepicker')    return <span key={tab.name} data-tour="filepicker-tab">{content}</span>;
+              if (tab.name === 'texturelogopicker') return <span key={tab.name} data-tour="texture-tab">{content}</span>;
+              if (tab.name === 'textcontrols')  return <span key={tab.name} data-tour="text-tab">{content}</span>;
+              return <span key={tab.name}>{content}</span>;
+            })}
             {generateTabContent()}
           </div>
         </motion.div>
@@ -453,7 +513,8 @@ const Customizer = () => {
           />
         </motion.div>
 
-        <motion.div key="toolbar" className="filtertabs-container ui-layer" {...slideAnimation('up')}>
+        {/* Thanh công cụ đáy */}
+        <motion.div key="toolbar" className="filtertabs-container ui-layer" {...slideAnimation('up')} data-tour="filters">
           {FilterTabs.map((tab) => (
             <Tab
               key={tab.name}
@@ -464,21 +525,23 @@ const Customizer = () => {
             />
           ))}
 
-          {/* Nút LƯU THIẾT KẾ (chỉ upload lên kho) */}
-          <CustomButton
-            type="filled"
-            title="Lưu thiết kế"
-            handleClick={saveCurrentDesign}
-            customStyles="w-fit px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white"
-          />
+          <span data-tour="save-btn">
+            <CustomButton
+              type="filled"
+              title="Lưu thiết kế"
+              handleClick={saveCurrentDesign}
+              customStyles="w-fit px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white"
+            />
+          </span>
 
-          {/* Nút THANH TOÁN: luôn bật */}
-          <CustomButton
-            type="filled"
-            title="Thanh Toán"
-            handleClick={() => nav('/checkout')}
-            customStyles="w-fit px-4 py-2 text-sm font-semibold rounded-lg bg-green-600 text-white"
-          />
+          <span data-tour="checkout-btn">
+            <CustomButton
+              type="filled"
+              title="Thanh Toán"
+              handleClick={() => nav('/checkout')}
+              customStyles="w-fit px-4 py-2 text-sm font-semibold rounded-lg bg-green-600 text-white"
+            />
+          </span>
         </motion.div>
       </AnimatePresence>
     </section>
