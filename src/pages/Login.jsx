@@ -24,6 +24,13 @@ export default function Login() {
     if (!pwd) return setErr('Vui lòng nhập mật khẩu');
     try {
       await login(email, pwd);
+
+      // 👇 Ép tour hiển thị lại sau khi đăng nhập
+      try {
+        localStorage.setItem('tour_customizer_force', '1');
+        localStorage.removeItem('tour_customizer_v1');
+      } catch {}
+
       notify.show('Đăng nhập thành công', 'success');
       nav(next);
     } catch (e) {
@@ -61,7 +68,16 @@ export default function Login() {
 
         <div className="mt-3">
           {/* Server sẽ đặt cookie + redirect lại next */}
-          <GoogleLoginButton next={next} onDone={() => nav(next)} />
+          <GoogleLoginButton
+            next={next}
+            onDone={() => {
+              try {
+                localStorage.setItem('tour_customizer_force', '1');
+                localStorage.removeItem('tour_customizer_v1');
+              } catch {}
+              nav(next);
+            }}
+          />
         </div>
 
         <div className="mt-4 text-center text-sm text-gray-600">
