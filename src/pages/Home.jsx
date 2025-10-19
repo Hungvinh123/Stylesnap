@@ -1,7 +1,7 @@
 // src/pages/Home.jsx
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../store/auth';
+
 import DesignList from "../components/DesignList";
 
 import Stage from '../components/Stage';
@@ -15,10 +15,10 @@ import {
 
 const Home = () => {
   const nav = useNavigate();
-  const { user } = useAuth();
+
 
   const handleCustomize = () => {
-    nav(user ? '/customize' : '/login?next=/customize');
+    nav( '/customize' );
   };
 
   return (
@@ -57,21 +57,7 @@ const Home = () => {
         </motion.section>
       </AnimatePresence>
 
-      {/* Gallery thiết kế */}
-      <div className="mt-10 ui-layer px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">Mẫu thiết kế của bạn</h2>
-          {user && (
-            <button
-              onClick={() => nav('/designs')}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2"
-            >
-              Xem tất cả
-            </button>
-          )}
-        </div>
-        <DesignList userId={user?.id} />
-      </div>
+      
     </section>
   );
 };

@@ -9,8 +9,8 @@ import ToastContainer from './components/ToastContainer';
 
 import Home from './pages/Home';
 import CustomizePage from './pages/Customizer';
-import Login from './pages/Login';
-import Register from './pages/Register';
+
+
 import Header from './components/Header';
 import { AuthProvider, useAuth } from './store/auth';
 import CheckoutPage from './pages/CheckoutPage';
@@ -26,9 +26,6 @@ function Protected({ children }) {
         Loading…
       </div>
     );
-  }
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
   return children;
 }
@@ -68,8 +65,6 @@ const router = createBrowserRouter([
   },
 
   { path: '/checkout', element: <AppLayout><CheckoutPage /></AppLayout> },
-  { path: '/login', element: <AppLayout><Login /></AppLayout> },
-  { path: '/register', element: <AppLayout><Register /></AppLayout> },
   { path: '*', element: <Navigate to="/home" replace /> }
 ]);
 

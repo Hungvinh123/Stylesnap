@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { fileURLToPath } from 'node:url';
 import { getPool } from './db.js';
-import authRoutes from './routes/auth.js';
+
 import orderRoutes from "./routes/order.js";
 import uploadsRouter from './routes/uploads.js';
 import imgProxy from './routes/imgProxy.js';
@@ -28,7 +28,7 @@ app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 // API routes
-app.use('/api/auth', authRoutes);
+
 app.use("/api/order", orderRoutes);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/img', imgProxy);

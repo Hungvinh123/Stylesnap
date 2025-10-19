@@ -1,6 +1,5 @@
 // src/components/PolicyNudge.jsx
 import React, { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../store/auth';
 import { Link } from 'react-router-dom';
 
 const DISMISS_KEY = 'policyNudge:dismissed:session'; // chỉ cho phiên hiện tại
@@ -15,8 +14,7 @@ export default function PolicyNudge({
   policyUrl = '/policy/asset-guidelines',
   className = '',
 }) {
-  const { user } = useAuth();               // theo dõi thay đổi đăng nhập
-  const prevUserIdRef = useRef(null);
+ 
   const [open, setOpen] = useState(true);
 
   // Khởi tạo: đọc trạng thái ẩn/hiện theo session
@@ -31,22 +29,7 @@ export default function PolicyNudge({
   }, []);
 
   // Khi user chuyển từ null -> có tài khoản (login/register), reset nudge cho phiên mới
-  useEffect(() => {
-    const currId = user?.id || user?._id || null; // tuỳ backend, hỗ trợ cả id/_id
-    const prevId = prevUserIdRef.current;
 
-    // Phát hiện sự kiện đăng nhập/đăng ký: từ null -> có id, hoặc đổi sang tài khoản khác
-    const justLoggedIn = (!prevId && currId) || (prevId && currId && prevId !== currId);
-
-    if (justLoggedIn) {
-      try {
-        sessionStorage.removeItem(DISMISS_KEY);
-      } catch {}
-      setOpen(true);
-    }
-
-    prevUserIdRef.current = currId;
-  }, [user]);
 
   const handleDismiss = () => {
     try {
